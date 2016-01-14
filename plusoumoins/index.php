@@ -1,63 +1,71 @@
 <?php
 session_start();
-$choice = rand(0,100);
-$response = null;
 
-
-if(empty($_SESSION['choice'])){
-    $_SESSION['choice'] = $choice;
-    $_SESSION['compteur'] = 1;
-    $_SESSION['meilleur_coup'] = null;
-    $_SESSION['nombres_coups'] = null;
+if(!isset($_SESSION['user'])){
+    header("Location: login.php");
+    exit;
 }
-else{
+
+if(isset($_POST['reset_best'])){
+    unset($_SESSION['best_score']);
+}
+if(empty($_SESSION['choice']) || isset($_POST['reset'])){
+    $choice  =  rand(0,100);
+    $_SESSION['score'] = 0;
+    $_SESSION['choice'] = $choice;
+}else{
     $choice = $_SESSION['choice'];
 }
 
-if(!isset($_POST['guess']) || empty($_POST['guess'])){
+$response = null;
+if( !isset($_POST['guess'])
+    || empty($_POST['guess'])){
     $response = "Pas de nombre";
-    $_SESSION['compteur']= 1;
-}
-else{
+}else{
     $guess = $_POST['guess'];
-    if($guess > $choice){
+    $_SESSION['score']++;
+    if($guess > $choice) {
         $response = "C'est moins";
-        $_SESSION['compteur']++;
-    }
-    elseif($guess < $choice){
+    }elseif($guess < $choice){
         $response = "C'est plus";
-        $_SESSION['compteur']++;
-    }
-    else{
-        $response = "C'est gagné en ".$_SESSION['compteur']." fois<br>";
-        $_SESSION['meilleur_coup'] = "meilleur coup: ".$_SESSION['compteur'];
+    }else{
+        $response = "C'est gagné";
+        if( !isset($_SESSION['best_score'])
+            || $_SESSION['best_score'] > $_SESSION['score']){
+            $_SESSION['best_score'] = $_SESSION['score'];
+        }
         unset($_SESSION['choice']);
-        unset($_SESSION['compteur']);
-
-
-
     }
-
 }
-
-
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Des papiers dans un bol</title>
+    <meta charset="UTF-8">
+    <title>Des papiers dans un bol </title>
 </head>
 <body>
-<?php echo$response;?>
-<?php echo$_SESSION['compteur'];?>
-<?php echo$_SESSION['meilleur_coup'];?>
 
-<form method="post">
-    <input type="text" name="guess">
-    <input type="submit" name="btn">
-    ( La reponse est <?php echo $choice?>)
+<?php echo $response;?> <br>
+Nombre de coup : <?php echo $_SESSION['score']; ?><br>
+<em>[Meilleur score pour <?php echo $_SESSION['user'];?>:
+    <?php
+    echo !isset($_SESSION['best_score'])
+        ? "Pas de meilleur score"
+        : $_SESSION['best_score'];
+    ?>]</em>
+<form method="POST">
+    <input type="text" name="guess" autofocus>
+    <input type="submit">
+    <input type="submit" name="reset" value="reset">
+    <input type="submit" name="reset_best" value="reset best">
 </form>
+<em>(La réponse est <?php echo $choice?>)</em>
+
+
+<form method="POST" action="login.php">
+    <input type="submit" name="logout" value="Logout">
+</form>
+
 </body>
 </html>
