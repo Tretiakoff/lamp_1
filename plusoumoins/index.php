@@ -1,42 +1,68 @@
 <?php
 session_start();
-
-if(!isset($_SESSION['user'])){
+require_once("config/dbconf.php");
+if (!isset($_SESSION['user'])) {
     header("Location: login.php");
     exit;
 }
-
-if(isset($_POST['reset_best'])){
+if (isset($_POST['reset_best'])) {
     unset($_SESSION['best_score']);
 }
-if(empty($_SESSION['choice']) || isset($_POST['reset'])){
-    $choice  =  rand(0,100);
+if (empty($_SESSION['choice']) || isset($_POST['reset'])) {
+    $choice = rand(0, 100);
     $_SESSION['score'] = 0;
     $_SESSION['choice'] = $choice;
-}else{
+} else {
     $choice = $_SESSION['choice'];
 }
-
 $response = null;
-if( !isset($_POST['guess'])
-    || empty($_POST['guess'])){
+if (!isset($_POST['guess'])
+    || empty($_POST['guess'])
+) {
     $response = "Pas de nombre";
-}else{
+} else {
     $guess = $_POST['guess'];
     $_SESSION['score']++;
-    if($guess > $choice) {
+    if ($guess > $choice) {
         $response = "C'est moins";
-    }elseif($guess < $choice){
+    } elseif ($guess < $choice) {
         $response = "C'est plus";
-    }else{
+    } else {
         $response = "C'est gagné";
-        if( !isset($_SESSION['best_score'])
-            || $_SESSION['best_score'] > $_SESSION['score']){
+        if (!isset($_SESSION['best_score'])
+            || $_SESSION['best_score'] > $_SESSION['score']
+        ) {
             $_SESSION['best_score'] = $_SESSION['score'];
         }
-        unset($_SESSION['choice']);
+
+        global $config;
+        $pdo = new PDO($config['host'], $config['user'], $config['password']);
+        $com = " UPDATE users SET best_score='" . $_SESSION["best_score"] . "'
+                          WHERE login = '" . $_SESSION["user"] . "'      ";
+        $req = $pdo->prepare($com);
+        $req->execute();
+
+        $sql = "SELECT login,best_score FROM users ORDER BY best_score,login";
+       $board =  "<table border='1'";
+
+        $board .= "<tr><th>User</th><th>Best Score</th></tr>";
+
+
+foreach ($pdo->query($sql) as $row) {
+    if ($row['best_score'] != NULL) {
+        $board .= "<tr><td>".$row['login'] . "</td><td>" . $row['best_score'] . "</td></tr>";
+
     }
 }
+        $board .= "</table>";
+
+        unset($_SESSION['choice']);
+    }
+
+
+}
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,9 +72,9 @@ if( !isset($_POST['guess'])
 </head>
 <body>
 
-<?php echo $response;?> <br>
+<?php echo $response; ?> <br>
 Nombre de coup : <?php echo $_SESSION['score']; ?><br>
-<em>[Meilleur score pour <?php echo $_SESSION['user'];?>:
+<em>[Meilleur score pour <?php echo $_SESSION['user']; ?>:
     <?php
     echo !isset($_SESSION['best_score'])
         ? "Pas de meilleur score"
@@ -60,12 +86,16 @@ Nombre de coup : <?php echo $_SESSION['score']; ?><br>
     <input type="submit" name="reset" value="reset">
     <input type="submit" name="reset_best" value="reset best">
 </form>
-<em>(La réponse est <?php echo $choice?>)</em>
+<em>(La réponse est <?php echo $choice ?>)</em>
 
 
 <form method="POST" action="login.php">
     <input type="submit" name="logout" value="Logout">
 </form>
+<br><br>
+<?php
 
+print $board;
+?>
 </body>
 </html>
