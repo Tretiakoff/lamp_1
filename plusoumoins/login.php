@@ -1,8 +1,10 @@
 <?php
 require_once("config/dbconf.php");
 session_start();
+
 if(isset($_POST['logout'])){
     unset($_SESSION['user']);
+    $_SESSION['score'] = 0;
 }
 if(isset($_SESSION['user'])){
     header("Location: index.php");
